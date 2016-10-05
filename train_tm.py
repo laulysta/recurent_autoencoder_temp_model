@@ -16,6 +16,7 @@ parser.add_argument('-d', '--dim_model', required=False, default='200', help='Si
 parser.add_argument('-l', '--lr', required=False, default='0.001', help='learning rate')
 parser.add_argument('-data', '--dataset', required=False, default='test', help='ex: test, AP_news')
 parser.add_argument('-bs', '--batch_size', required=False, default='64', help='Size of the batch')
+parser.add_argument('-rec_c', '--rec_coeff', required=False, default='1.0', help='coefficient for the reconstruction')
 parser.add_argument('-out', '--out_dir', required=False, default='.', help='Output directory for the model')
 
 
@@ -27,6 +28,7 @@ dim_model = int(args.dim_model)
 lr = float(args.lr)
 dataset = args.dataset
 batch_size = int(args.batch_size)
+rec_coeff = float(args.rec_coeff)
 
 
 def makedirs_catchExep(dirPath):
@@ -43,7 +45,7 @@ dirPath = pjoin(args.out_dir, 'saved_temporal_models/')
 makedirs_catchExep(dirPath)
 
 if dataset == "test" or dataset == "AP_news":
-    dirModelName = "model_" + "_".join([str(dataset), str(batch_size), str(model_version), str(dim_word), str(dim_model)])
+    dirModelName = "model_" + "_".join([str(dataset), str(batch_size), str(model_version), str(dim_word), str(dim_model), str(rec_coeff)])
 else:
     sys.exit("Wrong dataset")
 
@@ -87,17 +89,18 @@ trainerr, validerr, testerr = train(saveto=modelName,
                                     trainsetPath=trainsetPath,
                                     validsetPath=validsetPath,
                                     testsetPath=testsetPath,
-                                    clip_c=1.)
+                                    clip_c=1.,
+                                    rec_coeff=rec_coeff)
 
 
 # Prepare result line to append to result file
-line = "\t".join([str(dirModelName), str(dataset), str(batch_size), str(model_version), str(dim_word), str(dim_model), str(np.exp(trainerr)), str(np.exp(validerr)), str(np.exp(testerr))]) + "\n"
+line = "\t".join([str(dirModelName), str(dataset), str(batch_size), str(model_version), str(dim_word), str(dim_model), str(rec_coeff), str(np.exp(trainerr)), str(np.exp(validerr)), str(np.exp(testerr))]) + "\n"
 
 # Preparing result file
 results_file = dirPath + 'results.txt'
 if not os.path.exists(results_file):
     # Create result file if doesn't exist
-    header_line = "\t".join(['dirModelName', 'dataset', 'batch_size', 'model_version', 'dim_word', 'dim_model',
+    header_line = "\t".join(['dirModelName', 'dataset', 'batch_size', 'model_version', 'dim_word', 'dim_model', 'rec_coeff',
                              'train_perplexity', 'valid_perplexity', 'test_perplexity']) + '\n'
     f = open(results_file, 'w')
     f.write(header_line)

@@ -1,0 +1,19 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# C extensions
+*.so
+
+# Django stuff:
+*.log
+
+#mac os x
+.DS_Store
+
+#rest
+data
+*~
+saved_*
+SMART_*

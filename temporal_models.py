@@ -67,11 +67,13 @@ def load_params(path, params):
 
     return params
 
+
 # layers: 'name': ('parameter initializer', 'feedforward')
 layers = {'ff': ('param_init_fflayer', 'fflayer'),
           'ff_nb': ('param_init_fflayer_nb', 'fflayer_nb'),
           'lstm': ('param_init_lstm', 'lstm_layer'),
           'gru': ('param_init_gru', 'gru_layer'),
+          'gru_rec': ('param_init_gru', 'gru_layer_rec'),
           'rnn': ('param_init_rnn', 'rnn_layer'),
           }
 
@@ -309,6 +311,137 @@ def gru_layer(tparams, state_below, options, prefix='gru', mask=None, one_step=F
     return rval
 
 
+def gru_layer_rec_temp(tparams, state_below, options, prefix='gru', mask=None, one_step=False, init_state=None, **kwargs):
+    nsteps = state_below.shape[0]
+    if state_below.ndim == 3:
+        n_samples = state_below.shape[1]
+    else:
+        n_samples = 1
+
+    if one_step:
+        assert init_state, 'previous state must be provided'
+
+    dim = tparams[_p(prefix, 'Ux')].shape[1]
+
+    if mask is None:
+        mask = tensor.alloc(1., state_below.shape[0], 1)
+
+    # initial/previous state
+    if init_state is None:
+        init_state = tensor.alloc(0., n_samples, dim)
+
+    def _slice(_x, n, dim):
+        if _x.ndim == 3:
+            return _x[:, :, n * dim:(n + 1) * dim]
+        return _x[:, n * dim:(n + 1) * dim]
+
+    state_below_ = tensor.dot(state_below, tparams[_p(prefix, 'W')]) + tparams[_p(prefix, 'b')]
+    state_belowx = tensor.dot(state_below, tparams[_p(prefix, 'Wx')]) + tparams[_p(prefix, 'bx')]
+
+    def _step(m_, x_, xx_, h_, U, Ux):
+        preact = tensor.dot(h_, U)
+        preact += x_
+
+        r = tensor.nnet.sigmoid(_slice(preact, 0, dim))
+        u = tensor.nnet.sigmoid(_slice(preact, 1, dim))
+
+        preactx = tensor.dot(h_, Ux)
+        preactx = preactx * r
+        preactx = preactx + xx_
+
+        h = tensor.tanh(preactx)
+
+        h = u * h_ + (1. - u) * h
+        h = m_[:, None] * h + (1. - m_)[:, None] * h_
+
+        return h  # , r, u, preact, preactx
+
+    seqs = [mask, state_below_, state_belowx]
+
+    shared_vars = [tparams[_p(prefix, 'U')],
+                   tparams[_p(prefix, 'Ux')]]
+
+    if one_step:
+        rval = _step(*(seqs + [init_state, tensor.alloc(0., dim, dim)] + shared_vars))
+    else:
+        rval, updates = theano.scan(_step,
+                                    sequences=seqs,
+                                    outputs_info=[init_state],
+                                    non_sequences=shared_vars,
+                                    name=_p(prefix, '_layers'),
+                                    n_steps=nsteps,
+                                    profile=profile,
+                                    strict=True)
+    rval = [rval]
+    return rval
+
+
+def gru_layer_rec(tparams, state_below, options, prefix='gru', mask=None, one_step=False, init_state=None, **kwargs):
+    nsteps = state_below.shape[0]
+    if state_below.ndim == 3:
+        n_samples = state_below.shape[1]
+    else:
+        n_samples = 1
+
+    if one_step:
+        assert init_state, 'previous state must be provided'
+
+    dim = tparams[_p(prefix, 'Ux')].shape[1]
+
+    if mask is None:
+        mask = tensor.alloc(1., state_below.shape[0], 1)
+
+    # initial/previous state
+    if init_state is None:
+        init_state = tensor.alloc(0., n_samples, dim)
+
+    def _slice(_x, n, dim):
+        if _x.ndim == 3:
+            return _x[:, :, n * dim:(n + 1) * dim]
+        return _x[:, n * dim:(n + 1) * dim]
+
+    state_below_ = tensor.dot(state_below, tparams[_p(prefix, 'W')]) + tparams[_p(prefix, 'b')]
+    state_belowx = tensor.dot(state_below, tparams[_p(prefix, 'Wx')]) + tparams[_p(prefix, 'bx')]
+
+    def _step(m_, x_, xx_, h_, h_rec, U, Ux):
+        preact = tensor.dot(h_, U)
+        preact += x_
+
+        r = tensor.nnet.sigmoid(_slice(preact, 0, dim))
+        u = tensor.nnet.sigmoid(_slice(preact, 1, dim))
+
+        preactx_rec = tensor.dot(h_, Ux)
+        preactx = preactx_rec * r
+        preactx = preactx + xx_
+
+        h_rec = tensor.tanh(preactx_rec)
+        h = tensor.tanh(preactx)
+
+        h = u * h_ + (1. - u) * h
+        h = m_[:, None] * h + (1. - m_)[:, None] * h_
+
+        return h, h_rec  # , r, u, preact, preactx
+
+    seqs = [mask, state_below_, state_belowx]
+
+    shared_vars = [tparams[_p(prefix, 'U')],
+                   tparams[_p(prefix, 'Ux')]]
+
+    if one_step:
+        rval = _step(*(seqs + [init_state, tensor.alloc(0., dim, dim)] + shared_vars))
+    else:
+        rval, updates = theano.scan(_step,
+                                    sequences=seqs,
+                                    outputs_info=[init_state, tensor.alloc(0., n_samples, dim)],
+                                    non_sequences=shared_vars,
+                                    name=_p(prefix, '_layers'),
+                                    n_steps=nsteps,
+                                    profile=profile,
+                                    strict=True)
+    return rval
+
+
+
 # LSTM layer
 def param_init_lstm(options, params, prefix='lstm', nin=None, dim=None, hiero=False):
     W = numpy.concatenate([norm_weight(nin, dim),
@@ -391,6 +524,9 @@ def init_params(options):
     # readout
     params = get_layer('ff')[0](options, params, prefix='ff_logit', nin=options['dim'], nout=options['n_words'], ortho=False)
 
+    if options['model_version'] == 'gru_rec':
+        params = get_layer('ff')[0](options, params, prefix='rec_', nin=options['dim'], nout=options['dim'], ortho=False)
+
     return params
 
 
@@ -417,11 +553,23 @@ def build_model(tparams, options):
                                                   one_step=False)
 
     proj_h = proj[0]
+    if options['model_version'] == 'gru_rec':
+        proj_h_rec = proj[1]
+        logit_rec = get_layer('ff')[1](tparams, proj_h_rec, options, prefix='rec_', activ='linear')
 
     # compute word probabilities
     logit = get_layer('ff')[1](tparams, proj_h, options, prefix='ff_logit', activ='linear')
     logit_shp = logit.shape
     probs = tensor.nnet.softmax(logit.reshape([logit_shp[0] * logit_shp[1], logit_shp[2]]))
+
+    # reconstruction cost
+    if options['model_version'] == 'gru_rec':
+        proj_h_shifted = tensor.zeros_like(proj_h)
+        proj_h_shifted = tensor.set_subtensor(proj_h_shifted[1:], proj_h[:-1])
+        mse_mat = tensor.sqr(logit_rec - proj_h_shifted).sum(2) * x_mask
+        temp_mse = mse_mat.sum(0)
+        nb_word_vec = x_mask.sum(0)
+        cost_mse_rec = (temp_mse / nb_word_vec).sum()
 
     # cost
     x_flat = x.flatten()
@@ -429,6 +577,8 @@ def build_model(tparams, options):
     cost = -tensor.log(probs.flatten()[x_flat_idx])
     cost = cost.reshape([x.shape[0], x.shape[1]])
     cost = (cost * x_mask).sum(0)
+    if options['model_version'] == 'gru_rec':
+        cost += options['rec_coeff'] * cost_mse_rec
 
     return trng, x, x_mask, cost
 
@@ -580,7 +730,8 @@ def train(dim_word=100,  # word vector dimensionality
           validsetPath='test.txt',
           testsetPath='test.txt',
           reload_=False,
-          clip_c=0.):
+          clip_c=0.,
+          rec_coeff=0.1):
 
         # removed
         # encoder='gru',  ---> replaced by model_version
