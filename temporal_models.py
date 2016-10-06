@@ -577,10 +577,11 @@ def build_model(tparams, options):
     cost = -tensor.log(probs.flatten()[x_flat_idx])
     cost = cost.reshape([x.shape[0], x.shape[1]])
     cost = (cost * x_mask).sum(0)
+    cost_test = cost
     if options['model_version'] == 'gru_rec':
         cost += options['rec_coeff'] * cost_mse_rec
 
-    return trng, x, x_mask, cost
+    return trng, x, x_mask, cost, cost_test
 
 
 def pred_probs(f_log_probs, options, iterator, verbose=False):
@@ -774,14 +775,14 @@ def train(dim_word=100,  # word vector dimensionality
 
     tparams = init_tparams(params)
 
-    trng, x, x_mask, cost = build_model(tparams, model_options)
+    trng, x, x_mask, cost, cost_test = build_model(tparams, model_options)
     inps = [x, x_mask]
 
     # theano.printing.debugprint(cost.mean(), file=open('cost.txt', 'w'))
 
     # before any regularizer
     print 'Building f_log_probs...',
-    f_log_probs = theano.function(inps, cost, profile=profile)
+    f_log_probs = theano.function(inps, cost_test, profile=profile)
     print 'Done'
 
     cost = cost.mean()
@@ -795,9 +796,9 @@ def train(dim_word=100,  # word vector dimensionality
         cost += weight_decay
 
     # after any regularizer
-    print 'Building f_cost...',
-    f_cost = theano.function(inps, cost, profile=profile)
-    print 'Done'
+    #print 'Building f_cost...',
+    #f_cost = theano.function(inps, cost, profile=profile)
+    #print 'Done'
 
     print 'Computing gradient...',
     grads = tensor.grad(cost, wrt=itemlist(tparams))
