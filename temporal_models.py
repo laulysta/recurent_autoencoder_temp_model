@@ -243,6 +243,9 @@ def param_init_gru(options, params, prefix='gru', nin=None, dim=None, hiero=Fals
     params[_p(prefix, 'Ux')] = Ux
     params[_p(prefix, 'bx')] = numpy.zeros((dim,)).astype('float32')
 
+    if options['model_version'] == 'gru_rec':
+        params[_p(prefix, 'b_rec')] = numpy.zeros((dim,)).astype('float32')
+
     return params
 
 
@@ -311,71 +314,6 @@ def gru_layer(tparams, state_below, options, prefix='gru', mask=None, one_step=F
     return rval
 
 
-def gru_layer_rec_temp(tparams, state_below, options, prefix='gru', mask=None, one_step=False, init_state=None, **kwargs):
-    nsteps = state_below.shape[0]
-    if state_below.ndim == 3:
-        n_samples = state_below.shape[1]
-    else:
-        n_samples = 1
-
-    if one_step:
-        assert init_state, 'previous state must be provided'
-
-    dim = tparams[_p(prefix, 'Ux')].shape[1]
-
-    if mask is None:
-        mask = tensor.alloc(1., state_below.shape[0], 1)
-
-    # initial/previous state
-    if init_state is None:
-        init_state = tensor.alloc(0., n_samples, dim)
-
-    def _slice(_x, n, dim):
-        if _x.ndim == 3:
-            return _x[:, :, n * dim:(n + 1) * dim]
-        return _x[:, n * dim:(n + 1) * dim]
-
-    state_below_ = tensor.dot(state_below, tparams[_p(prefix, 'W')]) + tparams[_p(prefix, 'b')]
-    state_belowx = tensor.dot(state_below, tparams[_p(prefix, 'Wx')]) + tparams[_p(prefix, 'bx')]
-
-    def _step(m_, x_, xx_, h_, U, Ux):
-        preact = tensor.dot(h_, U)
-        preact += x_
-
-        r = tensor.nnet.sigmoid(_slice(preact, 0, dim))
-        u = tensor.nnet.sigmoid(_slice(preact, 1, dim))
-
-        preactx = tensor.dot(h_, Ux)
-        preactx = preactx * r
-        preactx = preactx + xx_
-
-        h = tensor.tanh(preactx)
-
-        h = u * h_ + (1. - u) * h
-        h = m_[:, None] * h + (1. - m_)[:, None] * h_
-
-        return h  # , r, u, preact, preactx
-
-    seqs = [mask, state_below_, state_belowx]
-
-    shared_vars = [tparams[_p(prefix, 'U')],
-                   tparams[_p(prefix, 'Ux')]]
-
-    if one_step:
-        rval = _step(*(seqs + [init_state, tensor.alloc(0., dim, dim)] + shared_vars))
-    else:
-        rval, updates = theano.scan(_step,
-                                    sequences=seqs,
-                                    outputs_info=[init_state],
-                                    non_sequences=shared_vars,
-                                    name=_p(prefix, '_layers'),
-                                    n_steps=nsteps,
-                                    profile=profile,
-                                    strict=True)
-    rval = [rval]
-    return rval
-
-
 def gru_layer_rec(tparams, state_below, options, prefix='gru', mask=None, one_step=False, init_state=None, **kwargs):
     nsteps = state_below.shape[0]
     if state_below.ndim == 3:
@@ -403,7 +341,7 @@ def gru_layer_rec(tparams, state_below, options, prefix='gru', mask=None, one_st
     state_below_ = tensor.dot(state_below, tparams[_p(prefix, 'W')]) + tparams[_p(prefix, 'b')]
     state_belowx = tensor.dot(state_below, tparams[_p(prefix, 'Wx')]) + tparams[_p(prefix, 'bx')]
 
-    def _step(m_, x_, xx_, h_, h_rec, U, Ux):
+    def _step(m_, x_, xx_, h_, h_rec, U, Ux, b_rec):
         preact = tensor.dot(h_, U)
         preact += x_
 
@@ -414,7 +352,7 @@ def gru_layer_rec(tparams, state_below, options, prefix='gru', mask=None, one_st
         preactx = preactx_rec * r
         preactx = preactx + xx_
 
-        h_rec = tensor.tanh(preactx_rec)
+        h_rec = tensor.tanh(preactx_rec + b_rec)
         h = tensor.tanh(preactx)
 
         h = u * h_ + (1. - u) * h
@@ -425,7 +363,8 @@ def gru_layer_rec(tparams, state_below, options, prefix='gru', mask=None, one_st
     seqs = [mask, state_below_, state_belowx]
 
     shared_vars = [tparams[_p(prefix, 'U')],
-                   tparams[_p(prefix, 'Ux')]]
+                   tparams[_p(prefix, 'Ux')],
+                   tparams[_p(prefix, 'b_rec')]]
 
     if one_step:
         rval = _step(*(seqs + [init_state, tensor.alloc(0., dim, dim)] + shared_vars))
