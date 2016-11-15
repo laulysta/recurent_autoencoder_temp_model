@@ -380,7 +380,6 @@ def gru_layer_rec(tparams, state_below, options, prefix='gru', mask=None, one_st
     return rval
 
 
-
 # LSTM layer
 def param_init_lstm(options, params, prefix='lstm', nin=None, dim=None, hiero=False):
     W = numpy.concatenate([norm_weight(nin, dim),

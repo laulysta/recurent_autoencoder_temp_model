@@ -11,9 +11,10 @@ class Batch_data_from_file_iter():
     a string (a line in the file) outputs an example.
     """
 
-    def __init__(self, filename, batch_size=80):
+    def __init__(self, filename, batch_size=80, sentence_max_size=50):
         self.filename = filename
         self.batch_size = batch_size
+        self.sentence_max_size = sentence_max_size
         self.f = open(os.path.expanduser(self.filename))
 
     def __iter__(self):
@@ -24,7 +25,8 @@ class Batch_data_from_file_iter():
 
     def next(self):
         batch_x = []
-        for i in range(self.batch_size):
+        i = 0
+        while i < self.batch_size:
             line = self.f.readline()
             if not line:  # if line is empty
                 if i == 0:
@@ -33,7 +35,11 @@ class Batch_data_from_file_iter():
                     raise StopIteration()
                 else:
                     break
-            batch_x += [self.load_line(line)]
+            x = self.load_line(line)
+            if x.shape[0] <= self.sentence_max_size:
+                batch_x += [x]
+                i += 1
+
         return batch_x
 
 
