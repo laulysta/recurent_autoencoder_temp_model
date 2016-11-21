@@ -669,7 +669,7 @@ def train(dim_word=100,  # word vector dimensionality
           validsetPath='test.txt',
           testsetPath='test.txt',
           reload_=False,
-          clip_c=0.,
+          clip_c=1.,
           rec_coeff=0.1):
 
         # removed

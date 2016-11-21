@@ -62,12 +62,21 @@ if dataset == "test":
     trainsetPath = '../data/data_test/trainset.txt'
     validsetPath = '../data/data_test/validset.txt'
     testsetPath = '../data/data_test/testset.txt'
-
 elif dataset == "AP_news":
     n_words = 17964
     trainsetPath = '../data/data_AP_news/trainset.txt'
     validsetPath = '../data/data_AP_news/validset.txt'
     testsetPath = '../data/data_AP_news/testset.txt'
+elif dataset == "fil9":
+    n_words = 20652
+    trainsetPath = '../data/data_fil9/trainset.txt'
+    validsetPath = '../data/data_fil9/validset.txt'
+    testsetPath = '../data/data_fil9/testset.txt'
+elif dataset == "fil9_small":
+    n_words = 20652
+    trainsetPath = '../data/data_fil9_small/trainset.txt'
+    validsetPath = '../data/data_fil9_small/validset.txt'
+    testsetPath = '../data/data_fil9_small/testset.txt'
 
 reload_ = False
 
