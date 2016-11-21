@@ -44,7 +44,7 @@ def makedirs_catchExep(dirPath):
 dirPath = pjoin(args.out_dir, 'saved_temporal_models/')
 makedirs_catchExep(dirPath)
 
-if dataset == "test" or dataset == "AP_news":
+if dataset == "test" or dataset == "AP_news" or dataset == "fil9" or dataset == "fil9_small":
     dirModelName = "model_" + "_".join([str(dataset), str(batch_size), str(model_version), str(dim_word), str(dim_model), str(rec_coeff)])
 else:
     sys.exit("Wrong dataset")
