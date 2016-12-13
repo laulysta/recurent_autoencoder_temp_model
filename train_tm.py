@@ -41,7 +41,7 @@ def makedirs_catchExep(dirPath):
 
 # Create names and folders
 ####################################################################################
-dirPath = pjoin(args.out_dir, 'saved_temporal_models/')
+dirPath = pjoin(args.out_dir, 'saved_temporal_models') + "_".join([str(dataset) str(model_version)]) + "/"
 makedirs_catchExep(dirPath)
 
 if dataset == "test" or dataset == "AP_news" or dataset == "fil9" or dataset == "fil9_small":
@@ -77,6 +77,11 @@ elif dataset == "fil9_small":
     trainsetPath = '../data/data_fil9_small/trainset.txt'
     validsetPath = '../data/data_fil9_small/validset.txt'
     testsetPath = '../data/data_fil9_small/testset.txt'
+elif dataset == "wiki2":
+    n_words = 33278
+    trainsetPath = '../data/data_wiki2/trainset.txt'
+    validsetPath = '../data/data_wiki2/validset.txt'
+    testsetPath = '../data/data_wiki2/testset.txt'
 
 reload_ = False
 

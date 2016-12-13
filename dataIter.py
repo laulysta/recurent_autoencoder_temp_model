@@ -11,7 +11,7 @@ class Batch_data_from_file_iter():
     a string (a line in the file) outputs an example.
     """
 
-    def __init__(self, filename, batch_size=80, sentence_max_size=50):
+    def __init__(self, filename, batch_size=80, sentence_max_size=-1):
         self.filename = filename
         self.batch_size = batch_size
         self.sentence_max_size = sentence_max_size
@@ -36,7 +36,7 @@ class Batch_data_from_file_iter():
                 else:
                     break
             x = self.load_line(line)
-            if x.shape[0] <= self.sentence_max_size:
+            if self.sentence_max_size == -1 or x.shape[0] <= self.sentence_max_size:
                 batch_x += [x]
                 i += 1
 
