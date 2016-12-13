@@ -841,6 +841,7 @@ def train(dim_word=100,  # word vector dimensionality
     valid_err = 0
     test_err = 0
     # train_err = pred_error(f_pred, prepare_data, train, kf)
+    train_err = pred_probs(f_log_probs, model_options, train) 
     if valid is not None:
         valid_err = pred_probs(f_log_probs, model_options, valid)  # .mean()
     if test is not None:
