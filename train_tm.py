@@ -18,6 +18,7 @@ parser.add_argument('-data', '--dataset', required=False, default='test', help='
 parser.add_argument('-bs', '--batch_size', required=False, default='64', help='Size of the batch')
 parser.add_argument('-rec_c', '--rec_coeff', required=False, default='1.0', help='coefficient for the reconstruction')
 parser.add_argument('-out', '--out_dir', required=False, default='.', help='Output directory for the model')
+parser.add_argument('-wd', '--use_word_dropout', required=False, default='True', help='Use dropout on the embedings of the words')
 
 
 args = parser.parse_args()
@@ -29,6 +30,7 @@ lr = float(args.lr)
 dataset = args.dataset
 batch_size = int(args.batch_size)
 rec_coeff = float(args.rec_coeff)
+use_word_dropout = bool(args.use_word_dropout)
 
 
 def makedirs_catchExep(dirPath):
@@ -41,7 +43,7 @@ def makedirs_catchExep(dirPath):
 
 # Create names and folders
 ####################################################################################
-dirPath = pjoin(args.out_dir, 'saved_temporal_models') + "_".join([str(dataset) str(model_version)]) + "/"
+dirPath = pjoin(args.out_dir, 'saved_temporal_models') + "_".join([str(dataset), 'dropout' + str(use_word_dropout), str(model_version)]) + "/"
 makedirs_catchExep(dirPath)
 
 if dataset == "test" or dataset == "AP_news" or dataset == "fil9" or dataset == "fil9_small":
@@ -104,17 +106,18 @@ trainerr, validerr, testerr = train(saveto=modelName,
                                     validsetPath=validsetPath,
                                     testsetPath=testsetPath,
                                     clip_c=1.,
-                                    rec_coeff=rec_coeff)
+                                    rec_coeff=rec_coeff,
+                                    use_word_dropout=use_word_dropout)
 
 
 # Prepare result line to append to result file
-line = "\t".join([str(dirModelName), str(dataset), str(batch_size), str(model_version), str(dim_word), str(dim_model), str(rec_coeff), str(np.exp(trainerr)), str(np.exp(validerr)), str(np.exp(testerr))]) + "\n"
+line = "\t".join([str(dirModelName), str(dataset), str(batch_size), str(model_version), str(dim_word), str(dim_model), str(rec_coeff), str(use_word_dropout), str(np.exp(trainerr)), str(np.exp(validerr)), str(np.exp(testerr))]) + "\n"
 
 # Preparing result file
 results_file = dirPath + 'results.txt'
 if not os.path.exists(results_file):
     # Create result file if doesn't exist
-    header_line = "\t".join(['dirModelName', 'dataset', 'batch_size', 'model_version', 'dim_word', 'dim_model', 'rec_coeff',
+    header_line = "\t".join(['dirModelName', 'dataset', 'batch_size', 'model_version', 'dim_word', 'dim_model', 'rec_coeff', 'use_word_dropout',
                              'train_perplexity', 'valid_perplexity', 'test_perplexity']) + '\n'
     f = open(results_file, 'w')
     f.write(header_line)

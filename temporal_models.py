@@ -42,6 +42,16 @@ def unzip(zipped):
 def itemlist(tparams):
     return [vv for kk, vv in tparams.iteritems()]
 
+    
+# p is the probability of keeping a unit
+def dropout_layer(state_before, use_noise, trng, p=0.5):
+    proj = tensor.switch(
+        use_noise,
+        state_before * trng.binomial(state_before.shape, p=p, n=1,
+                                     dtype=state_before.dtype),
+        state_before * p)
+    return proj
+
 
 # make prefix-appended name
 def _p(pp, name):
@@ -471,6 +481,7 @@ def init_params(options):
 # build a training model
 def build_model(tparams, options):
     trng = RandomStreams(1234)
+    use_noise = theano.shared(numpy.float32(0.))
 
     # description string: #words x #samples
     x = tensor.matrix('x', dtype='int64')
@@ -482,6 +493,8 @@ def build_model(tparams, options):
     #
 
     emb = tparams['Wemb'][x.flatten()].reshape([n_timesteps, n_samples, options['dim_word']])
+    if options['use_word_dropout']:
+        emb = dropout_layer(emb, use_noise, trng, p=0.5)
     emb_shifted = tensor.zeros_like(emb)
     emb_shifted = tensor.set_subtensor(emb_shifted[1:], emb[:-1])
     emb = emb_shifted
@@ -519,7 +532,7 @@ def build_model(tparams, options):
     if options['model_version'] == 'gru_rec':
         cost += options['rec_coeff'] * cost_mse_rec
 
-    return trng, x, x_mask, cost, cost_test
+    return trng, use_noise, x, x_mask, cost, cost_test
 
 
 def pred_probs(f_log_probs, options, iterator, verbose=False):
@@ -670,7 +683,8 @@ def train(dim_word=100,  # word vector dimensionality
           testsetPath='test.txt',
           reload_=False,
           clip_c=1.,
-          rec_coeff=0.1):
+          rec_coeff=0.1,
+          use_word_dropout=True):
 
         # removed
         # encoder='gru',  ---> replaced by model_version
@@ -713,7 +727,7 @@ def train(dim_word=100,  # word vector dimensionality
 
     tparams = init_tparams(params)
 
-    trng, x, x_mask, cost, cost_test = build_model(tparams, model_options)
+    trng, use_noise, x, x_mask, cost, cost_test = build_model(tparams, model_options)
     inps = [x, x_mask]
 
     # theano.printing.debugprint(cost.mean(), file=open('cost.txt', 'w'))
@@ -776,6 +790,7 @@ def train(dim_word=100,  # word vector dimensionality
     estop = False
     for eidx in xrange(max_epochs):
         # import ipdb; ipdb.set_trace()
+        use_noise.set_value(1.)
         n_samples = 0
         for x_raw in train:
             n_samples += len(x_raw)
@@ -810,6 +825,7 @@ def train(dim_word=100,  # word vector dimensionality
         train_err = 0
         valid_err = 0
         test_err = 0
+        use_noise.set_value(0.)
 
         if valid is not None:
             valid_err = pred_probs(f_log_probs, model_options, valid)  # .mean()
@@ -840,6 +856,7 @@ def train(dim_word=100,  # word vector dimensionality
     train_err = 0
     valid_err = 0
     test_err = 0
+    use_noise.set_value(0.)
     # train_err = pred_error(f_pred, prepare_data, train, kf)
     train_err = pred_probs(f_log_probs, model_options, train) 
     if valid is not None:
