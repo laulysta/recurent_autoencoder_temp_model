@@ -101,7 +101,7 @@ trainerr, validerr, testerr = train(saveto=modelName,
                                     decay_c=0.,
                                     diag_c=0.,  # not used with adadelta
                                     lrate=lr,
-                                    patience=5,
+                                    patience=10,
                                     batch_size=batch_size,
                                     valid_batch_size=batch_size,
                                     trainsetPath=trainsetPath,
