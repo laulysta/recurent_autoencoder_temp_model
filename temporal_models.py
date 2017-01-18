@@ -494,7 +494,7 @@ def build_model(tparams, options):
 
     emb = tparams['Wemb'][x.flatten()].reshape([n_timesteps, n_samples, options['dim_word']])
     if options['use_word_dropout']:
-        emb = dropout_layer(emb, use_noise, trng, p=0.5)
+        emb = dropout_layer(emb, use_noise, trng, p=1.0-options['use_word_dropout_p'])
     emb_shifted = tensor.zeros_like(emb)
     emb_shifted = tensor.set_subtensor(emb_shifted[1:], emb[:-1])
     emb = emb_shifted
@@ -684,7 +684,8 @@ def train(dim_word=100,  # word vector dimensionality
           reload_=False,
           clip_c=1.,
           rec_coeff=0.1,
-          use_word_dropout=True):
+          use_word_dropout=True,
+          use_word_dropout_p=0.5):
 
         # removed
         # encoder='gru',  ---> replaced by model_version
