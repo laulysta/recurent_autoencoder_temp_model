@@ -19,7 +19,7 @@ parser.add_argument('-bs', '--batch_size', required=False, default='64', help='S
 parser.add_argument('-rec_c', '--rec_coeff', required=False, default='1.0', help='coefficient for the reconstruction')
 parser.add_argument('-out', '--out_dir', required=False, default='.', help='Output directory for the model')
 parser.add_argument('-wd', '--use_word_dropout', required=False, default='True', help='Use dropout on the embedings of the words')
-parser.add_argument('-wd', '--use_word_dropout_p', required=False, default='0.5', help='Probability value for dropout')
+parser.add_argument('-wdp', '--use_word_dropout_p', required=False, default='0.5', help='Probability value for dropout')
 
 
 args = parser.parse_args()
