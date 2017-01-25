@@ -21,6 +21,8 @@ from collections import OrderedDict
 
 from dataIter import Batch_data_from_file_iter, prepare_data
 
+import theano.printing as printing
+
 profile = False
 
 
@@ -495,6 +497,10 @@ def build_model(tparams, options):
     emb = tparams['Wemb'][x.flatten()].reshape([n_timesteps, n_samples, options['dim_word']])
     if options['use_word_dropout']:
         emb = dropout_layer(emb, use_noise, trng, p=1.0-options['use_word_dropout_p'])
+
+    #emb = printing.Print('text')(emb)
+    #theano.printing.debugprint(emb, file=open('emb.txt', 'w'))
+
     emb_shifted = tensor.zeros_like(emb)
     emb_shifted = tensor.set_subtensor(emb_shifted[1:], emb[:-1])
     emb = emb_shifted
@@ -504,6 +510,8 @@ def build_model(tparams, options):
                                                   one_step=False)
 
     proj_h = proj[0]
+    if options['use_word_dropout']:
+        proj_h = dropout_layer(proj_h, use_noise, trng, p=1.0-options['use_word_dropout_p'])
     if options['model_version'] == 'gru_rec':
         proj_h_rec = proj[1]
         logit_rec = get_layer('ff')[1](tparams, proj_h_rec, options, prefix='rec_', activ='linear')
