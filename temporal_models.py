@@ -5,7 +5,7 @@ import theano
 import theano.tensor as tensor
 from theano.sandbox.rng_mrg import MRG_RandomStreams as RandomStreams
 
-from ipdb import set_trace as dbg
+#from ipdb import set_trace as dbg
 
 import cPickle as pkl
 import numpy
