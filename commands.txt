@@ -1,3 +1,7 @@
 python train_tm.py -mv gru -dw 10 -d 20 -data test -bs 10 -rec_c 0.5
 
 /rap/ycy-622-aa/.local/bin/smart-dispatch -q gpu_long --gpusPerNode 1 --pbsFlags=-lfeature=k80,qos=Long -t 3:00:00:00 launch THEANO_FLAGS=floatX=float32,device=gpu python train_tm.py -mv gru -dw 100 -d 100 -data AP_news -bs [1 10 20] -rec_c [1.0 0.5 0.1 0.05] -out /home/laulysta/scratch/exp/GRU_rec/
+
+
+
+/rap/ycy-622-aa/.local/bin/smart-dispatch -q gpu_long --gpusPerNode 1 --pbsFlags=-lfeature=k80,qos=Long -t 2:00:00:00 launch THEANO_FLAGS=floatX=float32,device=gpu python train_tm.py -mv gru -dw 1024 -d 1024 -data wiki2 -bs 25 -wd True -wdp [0.3 0.4 0.5 0.6 0.7] -out /home/laulysta/scratch/exp/GRU_rec/
