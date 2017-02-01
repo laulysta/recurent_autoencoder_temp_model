@@ -49,6 +49,7 @@ def prepare_data(x_list):
         ex_length = example.shape[0]
         if length_max < ex_length:
             length_max = ex_length
+    length_max += 1 # For eos
 
     # x = np.zeros([length_max + 1, len(x_list)], dtype=np.int64)
     # x_mask = np.zeros_like(x, dtype=np.float32)
@@ -60,6 +61,6 @@ def prepare_data(x_list):
     x_mask = np.zeros_like(x, dtype=np.float32)
     for i, example in enumerate(x_list):
         x[0:example.shape[0], i] = example
-        x_mask[0:example.shape[0], i] = np.ones([example.shape[0]], dtype=np.int32)
+        x_mask[0:example.shape[0]+1, i] = np.ones([example.shape[0]+1], dtype=np.int32)
 
     return x, x_mask
