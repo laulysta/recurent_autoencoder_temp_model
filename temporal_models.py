@@ -495,8 +495,8 @@ def build_model(tparams, options):
     #
 
     emb = tparams['Wemb'][x.flatten()].reshape([n_timesteps, n_samples, options['dim_word']])
-    if options['use_word_dropout']:
-        emb = dropout_layer(emb, use_noise, trng, p=1.0-options['use_word_dropout_p'])
+    #if options['use_word_dropout']:
+    #    emb = dropout_layer(emb, use_noise, trng, p=1.0-options['use_word_dropout_p'])
 
     #emb = printing.Print('text')(emb)
     #theano.printing.debugprint(emb, file=open('emb.txt', 'w'))
@@ -513,6 +513,7 @@ def build_model(tparams, options):
     if options['use_word_dropout']:
         proj_h = dropout_layer(proj_h, use_noise, trng, p=1.0-options['use_word_dropout_p'])
     if options['model_version'] == 'gru_rec':
+        target_rec = proj[0]  # which is the same as proj_h but no dropout
         proj_h_rec = proj[1]
         logit_rec = get_layer('ff')[1](tparams, proj_h_rec, options, prefix='rec_', activ='linear')
 
@@ -523,8 +524,8 @@ def build_model(tparams, options):
 
     # reconstruction cost
     if options['model_version'] == 'gru_rec':
-        proj_h_shifted = tensor.zeros_like(proj_h)
-        proj_h_shifted = tensor.set_subtensor(proj_h_shifted[1:], proj_h[:-1])
+        proj_h_shifted = tensor.zeros_like(target_rec)
+        proj_h_shifted = tensor.set_subtensor(proj_h_shifted[1:], target_rec[:-1])
         mse_mat = tensor.sqr(logit_rec - proj_h_shifted).sum(2) * x_mask
         temp_mse = mse_mat.sum(0)
         nb_word_vec = x_mask.sum(0)
