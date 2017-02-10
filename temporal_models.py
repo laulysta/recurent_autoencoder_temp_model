@@ -492,21 +492,23 @@ def build_model(tparams, options):
     n_timesteps = x.shape[0]
     n_samples = x.shape[1]
 
-    #
 
     emb = tparams['Wemb'][x.flatten()].reshape([n_timesteps, n_samples, options['dim_word']])
-    #if options['use_word_dropout']:
-    #    emb = dropout_layer(emb, use_noise, trng, p=1.0-options['use_word_dropout_p'])
 
     #emb = printing.Print('text')(emb)
     #theano.printing.debugprint(emb, file=open('emb.txt', 'w'))
 
     emb_shifted = tensor.zeros_like(emb)
     emb_shifted = tensor.set_subtensor(emb_shifted[1:], emb[:-1])
-    emb = emb_shifted
-    proj = get_layer(options['model_version'])[1](tparams, emb, options,
+    if options['use_word_dropout']:
+        emb_shifted = dropout_layer(emb_shifted, use_noise, trng, p=1.0-options['use_word_dropout_p'])
+
+    x_mask_shifted = tensor.ones_like(x_mask)
+    x_mask_shifted = tensor.set_subtensor(x_mask_shifted[1:], x_mask[:-1])
+
+    proj = get_layer(options['model_version'])[1](tparams, emb_shifted, options,
                                                   prefix=options['model_version'],
-                                                  mask=x_mask,
+                                                  mask=x_mask_shifted,
                                                   one_step=False)
 
     proj_h = proj[0]
