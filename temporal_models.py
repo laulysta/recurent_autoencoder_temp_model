@@ -503,12 +503,12 @@ def build_model(tparams, options):
     if options['use_word_dropout']:
         emb_shifted = dropout_layer(emb_shifted, use_noise, trng, p=1.0-options['use_word_dropout_p'])
 
-    x_mask_shifted = tensor.ones_like(x_mask)
-    x_mask_shifted = tensor.set_subtensor(x_mask_shifted[1:], x_mask[:-1])
+    #emb_shifted = printing.Print('text_emb_shifted')(emb_shifted)
+    #x_mask  = printing.Print('text_x_mask')(x_mask)
 
     proj = get_layer(options['model_version'])[1](tparams, emb_shifted, options,
                                                   prefix=options['model_version'],
-                                                  mask=x_mask_shifted,
+                                                  mask=x_mask,
                                                   one_step=False)
 
     proj_h = proj[0]
