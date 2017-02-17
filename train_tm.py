@@ -51,7 +51,7 @@ dirPath = pjoin(args.out_dir, 'saved_temporal_models') + "_".join([str(dataset),
 makedirs_catchExep(dirPath)
 
 if dataset == "test" or dataset == "AP_news" or dataset == "fil9" or dataset == "fil9_small" or dataset == "wiki2":
-    dirModelName = "model_" + "_".join([str(dataset), str(batch_size), str(model_version), str(dim_word), str(dim_model), str(rec_coeff), str(use_word_dropout_p), str(gradient_clipping)])
+    dirModelName = "model_" + "_".join([str(dataset), str(lr), str(batch_size), str(model_version), str(dim_word), str(dim_model), str(rec_coeff), str(use_word_dropout_p), str(gradient_clipping)])
 else:
     sys.exit("Wrong dataset")
 
@@ -99,7 +99,7 @@ trainerr, validerr, testerr = train(saveto=modelName,
                                     model_version=model_version,
                                     max_epochs=1000,
                                     n_words=n_words,
-                                    optimizer='adadelta',
+                                    optimizer='adagrad', #'adadelta',
                                     decay_c=0.,
                                     diag_c=0.,  # not used with adadelta
                                     lrate=lr,

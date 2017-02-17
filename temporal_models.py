@@ -609,6 +609,21 @@ def adam(lr, tparams, grads, inp, cost):
     return f_grad_shared, f_update
 
 
+def adagrad(lr, tparams, grads, inp, cost):
+    running_grads2 = [theano.shared(p.get_value() * numpy.float32(0.), name='%s_rgrad2' % k) for k, p in tparams.iteritems()]
+
+    rg2_new = [rg2 + (g ** 2) for rg2, g in zip(running_grads2, grads)]
+    rg2up = [(rg2, r_n) for rg2, r_n in zip(running_grads2, rg2_new)]
+
+    updir = [-lr * zg / (tensor.sqrt(rg2) + 1e-6) for zg, rg2 in zip(grads, rg2_new)]
+    param_up = [(p, p + ud) for p, ud in zip(itemlist(tparams), updir)]
+
+    inp += [lr]
+    f_update = theano.function(inp, cost, updates=rg2up+param_up, on_unused_input='ignore', profile=profile)
+
+    return f_update
+
+
 def adadelta(lr, tparams, grads, inp, cost):
     running_up2 = [theano.shared(p.get_value() * numpy.float32(0.), name='%s_rup2' % k) for k, p in tparams.iteritems()]
     running_grads2 = [theano.shared(p.get_value() * numpy.float32(0.), name='%s_rgrad2' % k) for k, p in tparams.iteritems()]
