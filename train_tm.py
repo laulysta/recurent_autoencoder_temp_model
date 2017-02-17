@@ -116,13 +116,13 @@ trainerr, validerr, testerr = train(saveto=modelName,
 
 
 # Prepare result line to append to result file
-line = "\t".join([str(dirModelName), str(dataset), str(batch_size), str(model_version), str(dim_word), str(dim_model), str(rec_coeff), str(use_word_dropout), str(use_word_dropout_p), str(gradient_clipping), str(np.exp(trainerr)), str(np.exp(validerr)), str(np.exp(testerr))]) + "\n"
+line = "\t".join([str(dirModelName), str(dataset), str(lr), str(batch_size), str(model_version), str(dim_word), str(dim_model), str(rec_coeff), str(use_word_dropout), str(use_word_dropout_p), str(gradient_clipping), str(np.exp(trainerr)), str(np.exp(validerr)), str(np.exp(testerr))]) + "\n"
 
 # Preparing result file
 results_file = dirPath + 'results.txt'
 if not os.path.exists(results_file):
     # Create result file if doesn't exist
-    header_line = "\t".join(['dirModelName', 'dataset', 'batch_size', 'model_version', 'dim_word', 'dim_model', 'rec_coeff', 'use_word_dropout', 'use_word_dropout_p', 'gradient_clipping',
+    header_line = "\t".join(['dirModelName', 'dataset', 'lr', 'batch_size', 'model_version', 'dim_word', 'dim_model', 'rec_coeff', 'use_word_dropout', 'use_word_dropout_p', 'gradient_clipping',
                              'train_perplexity', 'valid_perplexity', 'test_perplexity']) + '\n'
     f = open(results_file, 'w')
     f.write(header_line)

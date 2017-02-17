@@ -615,7 +615,7 @@ def adagrad(lr, tparams, grads, inp, cost):
     rg2_new = [rg2 + (g ** 2) for rg2, g in zip(running_grads2, grads)]
     rg2up = [(rg2, r_n) for rg2, r_n in zip(running_grads2, rg2_new)]
 
-    updir = [-lr * zg / (tensor.sqrt(rg2) + 1e-6) for zg, rg2 in zip(grads, rg2_new)]
+    updir = [-lr * zg / tensor.sqrt(rg2 + 1e-6) for zg, rg2 in zip(grads, rg2_new)]
     param_up = [(p, p + ud) for p, ud in zip(itemlist(tparams), updir)]
 
     inp += [lr]
